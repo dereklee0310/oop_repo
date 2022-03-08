@@ -81,7 +81,6 @@ void Dijkstra(Info info, vector<node> nodeList, unsigned int root)
 
     unsigned int curPoint; // TODO: change type
 
-    vector<unsigned int> childList; // store the next node of the current node (to record the path of shortest path)
     vector<unsigned int> distanceArr; // store the distance between the start point and other nodes
     vector<bool> isFound;
 
@@ -97,9 +96,9 @@ void Dijkstra(Info info, vector<node> nodeList, unsigned int root)
     // }
 
     for(unsigned int i = 0; i < info.nodeNum; i++) {
-        unsigned int tmp = info.isOld ? nodeList[root].oldNeighborList[i] : nodeList[root].newNeighborList[i];
+        unsigned int tmp = info.isOld ? nodeList.at(root).oldNeighborList.at(i) : nodeList.at(root).newNeighborList.at(i);
         distanceArr.push_back(tmp);
-        isFound[i] = false;
+        isFound.at(i) = false;
     }
     
     // isFound[0] = true;
@@ -114,20 +113,24 @@ void Dijkstra(Info info, vector<node> nodeList, unsigned int root)
     // }
 
     isFound.at(root) = true;
-    distanceArr[root] = 0;
+    distanceArr.at(root) = 0;
     for(unsigned int i = 0; i < info.nodeNum - 2; i++) {
-        curPoint = getMin(distanceArr, vertexNum, isFound);
-        isFound[curPoint] = true;
-        for(int j = 0; j < info.nodeNum; j++)
-            if(!isFound[j])
-                if(distanceArr[curPoint] + adjMatrix[curPoint][j] < distanceArr[j])
-                    distanceArr[j] = distanceArr[curPoint] + adjMatrix[curPoint][j];
+        curPoint = getMin(info, distanceArr, isFound);
+        isFound.at(curPoint) = true;
+        for(unsigned int j = 0; j < info.nodeNum; j++) {
+            if(!isFound.at(j)) {
+                if(distanceArr.at(curPoint) + nodeList.at(curPoint).oldNeighborList.at(j) < distanceArr.at(j)) {
+                    distanceArr.at(j) = distanceArr.at(curPoint) + nodeList.at(curPoint).oldNeighborList.at(j);
+                    // TODO: save the child of each node to the table
+                    info.oldTable.insert(pair<unsigned int, unsigned int> (curPoint, j)); // !use [] operator to overwrite the old data?
+                }
+            }
+        }
     }
 
     return;
 }
 
-// TODO: change int to unsigned int
 unsigned int getMin(Info info, vector<unsigned int> distanceArr, vector<bool> isFound)
 {
     // int minPos = -1;
@@ -140,12 +143,12 @@ unsigned int getMin(Info info, vector<unsigned int> distanceArr, vector<bool> is
     //     }
     // }
 
-    unsigned minPos;
+    unsigned int minPos;
     unsigned int min = UINT_MAX;
 
-    for(int i = 0; i < info.nodeNum; i++) {
+    for(unsigned int i = 0; i < info.nodeNum; i++) {
         if(distanceArr.at(i) < min && !isFound.at(i)) {
-            min = distanceArr[i];
+            min = distanceArr.at(i);
             minPos = i;
         }
     }
@@ -165,7 +168,8 @@ void Info::initialize()
 
 vector<unsigned int> findPath(Info info, vector<node> nodeList)
 {
-    for(int i = 0; i < info.nodeNum; i++) {
+    for(unsigned int i = 0; i < info.nodeNum; i++) {
         Dijkstra(info, nodeList, i); // TODO: change the definition of dijkstra function
     }
+    // TODO: return a table of path
 }
