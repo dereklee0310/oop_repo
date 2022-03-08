@@ -1,15 +1,14 @@
 #include <iostream>
 #include <map>
 #include <vector>
-#include <limits>
+#include <climits>
 
 using namespace std;
 
-class node {
+class Node {
     public:
         vector<unsigned int> oldNeighborList;
         vector<unsigned int> newNeighborList;
-        // TODO: initialize the vectors
 };
 
 class Dst {
@@ -21,7 +20,6 @@ class Dst {
 
 class Info {
     public:
-        // vector<unsigned int> dstList;
         vector<Dst> dstList;
         unsigned int nodeNum;
         unsigned int dstNum;
@@ -32,66 +30,74 @@ class Info {
         void initialize();
 };
 
-void Dijkstra(Info info, vector<node> nodeList, unsigned int root);
+void Dijkstra(Info &info, vector<Node> nodeList, unsigned int dstIdx);
 
 unsigned int getMin(Info info, vector<unsigned int> distanceArr, vector<bool> isFound);
 
-void findPath(Info info, vector<node> nodeList);
+void findPath(Info &info, vector<Node> nodeList);
 
 int main() {
     unsigned int linkId;
     unsigned int nodeId1;
     unsigned int nodeId2;
-    vector<node> nodeList; // nodes in the graph
+    unsigned int tmp;
+    vector<Node> nodeList; // nodes in the graph
     Info info;
     vector<Dst> dstList;
 
     info.initialize(); // read the data
-
     nodeList.resize(info.nodeNum);
-
-    for(int i = 0; i < info.nodeNum; i++) {
-        nodeList.at(i).oldNeighborList.resize(info.nodeNum);
-        nodeList.at(i).newNeighborList.resize(info.nodeNum);
+    for(unsigned int i = 0; i < info.nodeNum; i++) {
+        nodeList.at(i).oldNeighborList.resize(info.nodeNum, UINT_MAX / 2);
+        nodeList.at(i).newNeighborList.resize(info.nodeNum, UINT_MAX / 2);
     }
 
     // read the information of links
-    for(int i = 0; i < info.linkNum; i++) {
-        cin >> linkId >> nodeId1 >> nodeId2; // what is the usage?
-        cin >> nodeList.at(nodeId1).oldNeighborList.at(nodeId2);
-        cin >> nodeList.at(nodeId1).newNeighborList.at(nodeId2);
+    for(unsigned int i = 0; i < info.linkNum; i++) {
+        cin >> linkId >> nodeId1 >> nodeId2;
+        cin >> tmp;
+        nodeList.at(nodeId1).oldNeighborList.at(nodeId2) = tmp;
+        nodeList.at(nodeId2).oldNeighborList.at(nodeId1) = tmp;
+        cin >> tmp;
+        nodeList.at(nodeId1).newNeighborList.at(nodeId2) = tmp;
+        nodeList.at(nodeId2).newNeighborList.at(nodeId1) = tmp;
     }
 
     findPath(info, nodeList);
     info.isOld = false;
-    // findPath(info, nodeList);
+    findPath(info, nodeList);
 
-    // cout << "test" << endl;
 
-    for(int i = 0; i < info.nodeNum; i++) {
+    for(unsigned int i = 0; i < info.nodeNum; i++) {
         cout << i << endl; // the Id of each start point
         for(unsigned int j = 0; j < info.dstNum; j++) {
-            // TODO: print out the old table and new table(changed entries)
-            cout << info.dstList.at(j).dstPoint << " " << info.dstList.at(j).oldTable.at(i);
+            if(i == info.dstList.at(j).dstPoint)
+                continue;
+            cout << info.dstList.at(j).dstPoint << " " << info.dstList.at(j).oldTable[i] << endl;
+        }
+    }
+
+    for(unsigned int i = 0; i < info.nodeNum; i++) {
+        for(unsigned int j = 0; j < info.dstNum; j++) {
+            if(info.dstList.at(j).oldTable[i] != info.dstList.at(j).newTable[i]) {
+                cout << i << endl; // the Id of each start point
+                break;
+            }
+        }
+        for(unsigned int k = 0; k < info.dstNum; k++) {
+            if(info.dstList.at(k).oldTable[i] != info.dstList.at(k).newTable[i])
+                cout << info.dstList.at(k).dstPoint << " " << info.dstList.at(k).newTable[i] << endl;
         }
     }
 
     return 0;
 }
 
-void Dijkstra(Info info, vector<node> nodeList, unsigned int root)
+void Dijkstra(Info &info, vector<Node> nodeList, unsigned int dstIdx)
 {   
-    // int *distanceArr;
-    // bool *isFound;
-    // distanceArr = (int *)malloc(sizeof(int) * vertexNum);
-    // isFound = (bool *)malloc(sizeof(bool) * vertexNum);
-
     unsigned int curPoint;
-
     vector<unsigned int> distanceArr; // store the distance between the start point and other nodes
     vector<bool> isFound;
-
-    map<unsigned int, unsigned int> table; // return a table of path
 
     // allocate memory
     distanceArr.resize(info.nodeNum);
@@ -102,10 +108,18 @@ void Dijkstra(Info info, vector<node> nodeList, unsigned int root)
     //     isFound[i] = false;
     // }
 
+    int root = info.dstList.at(dstIdx).dstPoint;
+
     for(unsigned int i = 0; i < info.nodeNum; i++) {
         unsigned int tmp = info.isOld ? nodeList.at(root).oldNeighborList.at(i) : nodeList.at(root).newNeighborList.at(i);
         distanceArr.at(i) = tmp;
-        info.dstList.at(root).oldTable.at(i) = root; // root is the next node of node i (after the graph being reversed)
+        if(tmp != UINT_MAX / 2) {
+            if(info.isOld) {
+                info.dstList.at(dstIdx).oldTable[i] = root; // root is the next node of node i (after the graph being reversed)
+            } else {
+                info.dstList.at(dstIdx).newTable[i] = root;
+            }
+        }
     }
 
     // isFound[0] = true;
@@ -125,33 +139,26 @@ void Dijkstra(Info info, vector<node> nodeList, unsigned int root)
         curPoint = getMin(info, distanceArr, isFound);
         isFound.at(curPoint) = true;
         for(unsigned int j = 0; j < info.nodeNum; j++) {
-            cout << "test" << endl;
             if(!isFound.at(j)) {
-                if(distanceArr.at(curPoint) + nodeList.at(curPoint).oldNeighborList.at(j) < distanceArr.at(j)) {
-                    distanceArr.at(j) = distanceArr.at(curPoint) + nodeList.at(curPoint).oldNeighborList.at(j);
-                    // TODO: save the child of each node to the table
-                    info.dstList.at(root).oldTable.at(j) = curPoint; // !use [] operator to overwrite the old data?
+                if(info.isOld) {
+                    if(distanceArr.at(curPoint) + nodeList.at(curPoint).oldNeighborList.at(j) < distanceArr.at(j)) {
+                        distanceArr.at(j) = distanceArr.at(curPoint) + nodeList.at(curPoint).oldNeighborList.at(j);
+                        info.dstList.at(dstIdx).oldTable[j] = curPoint; // use [] operator to overwrite the old data
+                    }
+                } else {
+                    if(distanceArr.at(curPoint) + nodeList.at(curPoint).newNeighborList.at(j) < distanceArr.at(j)) {
+                        distanceArr.at(j) = distanceArr.at(curPoint) + nodeList.at(curPoint).newNeighborList.at(j);
+                        info.dstList.at(dstIdx).newTable[j] = curPoint; // use [] operator to overwrite the old data
+                    }
                 }
             }
         }
     }
-    
-    return;
 }
 
 unsigned int getMin(Info info, vector<unsigned int> distanceArr, vector<bool> isFound)
 {
-    // int minPos = -1;
-    // int min = INT_MAX;
-
-    // for(int i = 0; i < vertexNum; i++) {
-    //     if(distanceArr[i] < min && !isFound[i]) {
-    //         min = distanceArr[i];
-    //         minPos = i;
-    //     }
-    // }
-
-    unsigned int minPos;
+    unsigned int minPos = 0;
     unsigned int min = UINT_MAX;
 
     for(unsigned int i = 0; i < info.nodeNum; i++) {
@@ -168,16 +175,13 @@ void Info::initialize()
 {
     cin >> nodeNum >> dstNum >> linkNum;
 
-    // read the destinations
     dstList.resize(dstNum);
-    for(int i = 0; i < dstNum; i++)
+    for(unsigned int i = 0; i < dstNum; i++)
         cin >> dstList.at(i).dstPoint;
 }
 
-void findPath(Info info, vector<node> nodeList)
+void findPath(Info &info, vector<Node> nodeList)
 {
-    for(int i = 0; i < info.dstNum; i++)
-        Dijkstra(info, nodeList, info.dstList.at(i).dstPoint); // use the destinations as the root of shortest path tree
-    
-    return;
+    for(unsigned int i = 0; i < info.dstNum; i++)
+        Dijkstra(info, nodeList, i); // use the destinations as the root of shortest path tree
 }
