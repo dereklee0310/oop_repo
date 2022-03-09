@@ -41,9 +41,9 @@ int main() {
     unsigned int nodeId1;
     unsigned int nodeId2;
     unsigned int tmp;
-    vector<Node> nodeList; // nodes in the graph
+    vector<Node> nodeList; // nodes in the graph with their neighbors
+    vector<Dst> dstList; // destinations with their corresponding trees
     Info info;
-    vector<Dst> dstList;
 
     info.initialize(); // read the data
     nodeList.resize(info.nodeNum);
@@ -69,9 +69,9 @@ int main() {
 
 
     for(unsigned int i = 0; i < info.nodeNum; i++) {
-        cout << i << endl; // the Id of each start point
+        cout << i << endl; // simply print the node Id
         for(unsigned int j = 0; j < info.dstNum; j++) {
-            if(i == info.dstList.at(j).dstPoint)
+            if(i == info.dstList.at(j).dstPoint) // if the node Id equals the destination, don't print it.
                 continue;
             cout << info.dstList.at(j).dstPoint << " " << info.dstList.at(j).oldTable[i] << endl;
         }
@@ -79,13 +79,15 @@ int main() {
 
     for(unsigned int i = 0; i < info.nodeNum; i++) {
         for(unsigned int j = 0; j < info.dstNum; j++) {
-            if(info.dstList.at(j).oldTable[i] != info.dstList.at(j).newTable[i]) {
-                cout << i << endl; // the Id of each start point
+            if(info.dstList.at(j).oldTable[i] != info.dstList.at(j).newTable[i] && i != info.dstList.at(j).dstPoint) {
+                cout << i << endl; // print the node Id if any path is changed
                 break;
             }
         }
         for(unsigned int k = 0; k < info.dstNum; k++) {
-            if(info.dstList.at(k).oldTable[i] != info.dstList.at(k).newTable[i])
+            if(i == info.dstList.at(k).dstPoint) // if the node Id equals the destination, don't print it.
+                continue;
+            if(info.dstList.at(k).oldTable[i] != info.dstList.at(k).newTable[i]) // print the nodes which has been changed
                 cout << info.dstList.at(k).dstPoint << " " << info.dstList.at(k).newTable[i] << endl;
         }
     }
@@ -97,7 +99,7 @@ void Dijkstra(Info &info, vector<Node> nodeList, unsigned int dstIdx)
 {   
     unsigned int curPoint;
     vector<unsigned int> distanceArr; // store the distance between the start point and other nodes
-    vector<bool> isFound;
+    vector<bool> isFound; // record the state of each node
 
     // allocate memory
     distanceArr.resize(info.nodeNum);
@@ -109,6 +111,7 @@ void Dijkstra(Info &info, vector<Node> nodeList, unsigned int dstIdx)
     // }
 
     int root = info.dstList.at(dstIdx).dstPoint;
+    info.dstList.at(dstIdx).oldTable[root] = root; // the next node of destionation is the destination itself
 
     for(unsigned int i = 0; i < info.nodeNum; i++) {
         unsigned int tmp = info.isOld ? nodeList.at(root).oldNeighborList.at(i) : nodeList.at(root).newNeighborList.at(i);
@@ -136,8 +139,10 @@ void Dijkstra(Info &info, vector<Node> nodeList, unsigned int dstIdx)
     isFound.at(root) = true;
     distanceArr.at(root) = 0;
     for(unsigned int i = 0; i < info.nodeNum - 2; i++) {
-        curPoint = getMin(info, distanceArr, isFound);
+        curPoint = getMin(info, distanceArr, isFound); // get the smallest node that have the shortest distance between root node
         isFound.at(curPoint) = true;
+
+        // update all distance between neighbor nodes and current point
         for(unsigned int j = 0; j < info.nodeNum; j++) {
             if(!isFound.at(j)) {
                 if(info.isOld) {
