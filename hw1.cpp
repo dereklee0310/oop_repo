@@ -42,7 +42,6 @@ int main() {
     unsigned int nodeId2;
     unsigned int tmp;
     vector<Node> nodeList; // nodes in the graph with their neighbors
-    vector<Dst> dstList; // destinations with their corresponding trees
     Info info;
 
     info.initialize(); // read the data
@@ -85,9 +84,7 @@ int main() {
             }
         }
         for(unsigned int k = 0; k < info.dstNum; k++) {
-            if(i == info.dstList.at(k).dstPoint) // if the node Id equals the destination, don't print it.
-                continue;
-            if(info.dstList.at(k).oldTable[i] != info.dstList.at(k).newTable[i]) // print the nodes which has been changed
+            if(info.dstList.at(k).oldTable[i] != info.dstList.at(k).newTable[i] && i != info.dstList.at(k).dstPoint) // print the nodes which has been changed, if the node Id equals the destination, don't print it.
                 cout << info.dstList.at(k).dstPoint << " " << info.dstList.at(k).newTable[i] << endl;
         }
     }
@@ -97,12 +94,13 @@ int main() {
 
 void Dijkstra(Info &info, vector<Node> nodeList, unsigned int dstIdx)
 {   
+
     unsigned int curPoint;
     vector<unsigned int> distanceArr; // store the distance between the start point and other nodes
     vector<bool> isFound; // record the state of each node
 
     // allocate memory
-    distanceArr.resize(info.nodeNum);
+    distanceArr.resize(info.nodeNum, UINT_MAX / 2); // !UINT_MAX
     isFound.resize(info.nodeNum, false);
 
     // for(int i = 0; i < vertexNum; i++) {
@@ -110,20 +108,23 @@ void Dijkstra(Info &info, vector<Node> nodeList, unsigned int dstIdx)
     //     isFound[i] = false;
     // }
 
-    int root = info.dstList.at(dstIdx).dstPoint;
-    info.dstList.at(dstIdx).oldTable[root] = root; // the next node of destionation is the destination itself
-
-    for(unsigned int i = 0; i < info.nodeNum; i++) {
-        unsigned int tmp = info.isOld ? nodeList.at(root).oldNeighborList.at(i) : nodeList.at(root).newNeighborList.at(i);
-        distanceArr.at(i) = tmp;
-        if(tmp != UINT_MAX / 2) {
-            if(info.isOld) {
-                info.dstList.at(dstIdx).oldTable[i] = root; // root is the next node of node i (after the graph being reversed)
-            } else {
-                info.dstList.at(dstIdx).newTable[i] = root;
-            }
-        }
-    }
+    unsigned int root = info.dstList.at(dstIdx).dstPoint;
+    if(info.isOld)
+        info.dstList.at(dstIdx).oldTable[root] = root; // the next node of destionation is the destination itself
+    else
+        info.dstList.at(dstIdx).newTable[root] = root;
+    // !delete
+    // for(unsigned int i = 0; i < info.nodeNum; i++) {
+    //     unsigned int tmp = info.isOld ? nodeList.at(root).oldNeighborList.at(i) : nodeList.at(root).newNeighborList.at(i);
+    //     distanceArr.at(i) = tmp;
+    //     if(tmp != UINT_MAX / 2) {
+    //         if(info.isOld) {
+    //             info.dstList.at(dstIdx).oldTable[i] = root; // root is the next node of node i (after the graph being reversed)
+    //         } else {
+    //             info.dstList.at(dstIdx).newTable[i] = root;
+    //         }
+    //     }
+    // }
 
     // isFound[0] = true;
     // distanceArr[0] = 0;
@@ -136,9 +137,11 @@ void Dijkstra(Info &info, vector<Node> nodeList, unsigned int dstIdx)
     //                 distanceArr[j] = distanceArr[curPoint] + adjMatrix[curPoint][j];
     // }
 
-    isFound.at(root) = true;
+    // !delete
+    // isFound.at(root) = true;
     distanceArr.at(root) = 0;
-    for(unsigned int i = 0; i < info.nodeNum - 2; i++) {
+    
+    for(unsigned int i = 0; i < info.nodeNum; i++) {
         curPoint = getMin(info, distanceArr, isFound); // get the smallest node that have the shortest distance between root node
         isFound.at(curPoint) = true;
 
@@ -164,7 +167,7 @@ void Dijkstra(Info &info, vector<Node> nodeList, unsigned int dstIdx)
 unsigned int getMin(Info info, vector<unsigned int> distanceArr, vector<bool> isFound)
 {
     unsigned int minPos = 0;
-    unsigned int min = UINT_MAX;
+    unsigned long min = UINT_MAX;
 
     for(unsigned int i = 0; i < info.nodeNum; i++) {
         if(distanceArr.at(i) < min && !isFound.at(i)) {
