@@ -38,9 +38,11 @@ void findPath(Info &info, vector<Node> node_list);
 
 void Dijkstra(Info &info, vector<Node> node_list, unsigned int dest_idx);
 
-unsigned int getMin(Info info, vector<unsigned long> distance_arr, vector<bool> is_found);
+unsigned int getMin(Info &info, vector<unsigned long> distance_arr, vector<bool> is_found);
 
 int main() {
+    //freopen("1.in","r",stdin);
+    //freopen("output.txt","w",stdout);
     Info info;
 
     info.Initialize(); // read the data
@@ -82,6 +84,7 @@ void Dijkstra(Info &info, vector<Node> node_list, unsigned int dest_idx)
     
     for(unsigned int i = 0; i < info.node_num - 1; i++) {
         min_point = getMin(info, distance_arr, is_found); // get the smallest node that have the shortest distance between root node
+
         is_found.at(min_point) = true;
 
         // update all distance between neighbor nodes and current point
@@ -89,11 +92,21 @@ void Dijkstra(Info &info, vector<Node> node_list, unsigned int dest_idx)
             if(is_found.at(j))
                 continue;
             if(info.is_old) {
+                if(distance_arr.at(min_point) + node_list.at(min_point).old_neighbor_list.at(j) == distance_arr.at(j)) {
+                    if(min_point < info.dest_list.at(dest_idx).old_table[j]) {
+                        info.dest_list.at(dest_idx).old_table[j] = min_point;
+                    }
+                }
                 if(distance_arr.at(min_point) + node_list.at(min_point).old_neighbor_list.at(j) < distance_arr.at(j)) {
                     distance_arr.at(j) = distance_arr.at(min_point) + node_list.at(min_point).old_neighbor_list.at(j);
                     info.dest_list.at(dest_idx).old_table[j] = min_point; // use [] operator to overwrite the old data
                 }
             } else {
+                if(distance_arr.at(min_point) + node_list.at(min_point).new_neighbor_list.at(j) == distance_arr.at(j)) {
+                    if(min_point < info.dest_list.at(dest_idx).new_table[j]) {
+                        info.dest_list.at(dest_idx).new_table[j] = min_point;
+                    }
+                }
                 if(distance_arr.at(min_point) + node_list.at(min_point).new_neighbor_list.at(j) < distance_arr.at(j)) {
                     distance_arr.at(j) = distance_arr.at(min_point) + node_list.at(min_point).new_neighbor_list.at(j);
                     info.dest_list.at(dest_idx).new_table[j] = min_point; // use [] operator to overwrite the old data
@@ -104,7 +117,7 @@ void Dijkstra(Info &info, vector<Node> node_list, unsigned int dest_idx)
     }
 }
 
-unsigned int getMin(Info info, vector<unsigned long> distance_arr, vector<bool> is_found)
+unsigned int getMin(Info &info, vector<unsigned long> distance_arr, vector<bool> is_found)
 {
     unsigned int minPos = 0;
     unsigned long min = LONG_MAX;
