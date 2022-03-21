@@ -2,194 +2,186 @@
 #include <map>
 #include <vector>
 #include <climits>
+#include <utility>
+
+#define MAX 4096
 
 using namespace std;
 
+// signle node in the routing table
 class Node {
     public:
-        vector<unsigned int> oldNeighborList;
-        vector<unsigned int> newNeighborList;
+        vector<unsigned int> old_neighbor_list, new_neighbor_list;
 };
 
-class Dst {
+// record of destinations and their corresponding tables
+class Dest {
     public:
-        unsigned int dstPoint;
-        map<unsigned int, unsigned int> oldTable;
-        map<unsigned int, unsigned int> newTable;
+        unsigned int dest_point;
+        map<unsigned int, unsigned int> old_table, new_table;
 };
 
+// info of the routing table
 class Info {
     public:
-        vector<Dst> dstList;
-        unsigned int nodeNum;
-        unsigned int dstNum;
-        unsigned int linkNum;
-        bool isOld;
+        vector<Node> node_list;
+        vector<Dest> dest_list;
+        unsigned int node_num, dest_num, link_num;
+        bool is_old;
         
-        Info() : isOld(true) {};
-        void initialize();
+        Info() : is_old(true) {};
+        void Initialize();
 };
 
-void Dijkstra(Info &info, vector<Node> nodeList, unsigned int dstIdx);
-
-unsigned int getMin(Info info, vector<unsigned int> distanceArr, vector<bool> isFound);
-
-void findPath(Info &info, vector<Node> nodeList);
+// operation on routing table
+class Ctrl {
+    public:
+        void findPath(Info &info, vector<Node> node_list);
+        void Dijkstra(Info &info, vector<Node> node_list, unsigned int dest_idx);
+        unsigned int getMin(Info &info, vector<unsigned long> distance_arr, vector<bool> is_found);
+        void PrintOldTable(Info info);
+        void PrintNewTable(Info info);
+};
 
 int main() {
-    unsigned int linkId;
-    unsigned int nodeId1;
-    unsigned int nodeId2;
-    unsigned int tmp;
-    vector<Node> nodeList; // nodes in the graph with their neighbors
     Info info;
+    Ctrl controller;
 
-    info.initialize(); // read the data
-    nodeList.resize(info.nodeNum);
-    for(unsigned int i = 0; i < info.nodeNum; i++) {
-        nodeList.at(i).oldNeighborList.resize(info.nodeNum, UINT_MAX / 2);
-        nodeList.at(i).newNeighborList.resize(info.nodeNum, UINT_MAX / 2);
-    }
+    info.Initialize(); // read the data
 
-    // read the information of links
-    for(unsigned int i = 0; i < info.linkNum; i++) {
-        cin >> linkId >> nodeId1 >> nodeId2;
-        cin >> tmp;
-        nodeList.at(nodeId1).oldNeighborList.at(nodeId2) = tmp;
-        nodeList.at(nodeId2).oldNeighborList.at(nodeId1) = tmp;
-        cin >> tmp;
-        nodeList.at(nodeId1).newNeighborList.at(nodeId2) = tmp;
-        nodeList.at(nodeId2).newNeighborList.at(nodeId1) = tmp;
-    }
+    controller.findPath(info, info.node_list);
+    info.is_old = false; // change the state to find the new table instead
+    controller.findPath(info, info.node_list);
 
-    findPath(info, nodeList);
-    info.isOld = false;
-    findPath(info, nodeList);
-
-
-    for(unsigned int i = 0; i < info.nodeNum; i++) {
-        cout << i << endl; // simply print the node Id
-        for(unsigned int j = 0; j < info.dstNum; j++) {
-            if(i == info.dstList.at(j).dstPoint) // if the node Id equals the destination, don't print it.
-                continue;
-            cout << info.dstList.at(j).dstPoint << " " << info.dstList.at(j).oldTable[i] << endl;
-        }
-    }
-
-    for(unsigned int i = 0; i < info.nodeNum; i++) {
-        for(unsigned int j = 0; j < info.dstNum; j++) {
-            if(info.dstList.at(j).oldTable[i] != info.dstList.at(j).newTable[i] && i != info.dstList.at(j).dstPoint) {
-                cout << i << endl; // print the node Id if any path is changed
-                break;
-            }
-        }
-        for(unsigned int k = 0; k < info.dstNum; k++) {
-            if(info.dstList.at(k).oldTable[i] != info.dstList.at(k).newTable[i] && i != info.dstList.at(k).dstPoint) // print the nodes which has been changed, if the node Id equals the destination, don't print it.
-                cout << info.dstList.at(k).dstPoint << " " << info.dstList.at(k).newTable[i] << endl;
-        }
-    }
+    controller.PrintOldTable(info);
+    controller.PrintNewTable(info);
 
     return 0;
 }
 
-void Dijkstra(Info &info, vector<Node> nodeList, unsigned int dstIdx)
+void Ctrl::findPath(Info &info, vector<Node> node_list)
+{
+    for(unsigned int i = 0; i < info.dest_num; i++)
+        Dijkstra(info, node_list, i); // use the destinations as the root of shortest path tree 
+}
+
+void Ctrl::Dijkstra(Info &info, vector<Node> node_list, unsigned int dest_idx)
 {   
+    unsigned int root;
+    unsigned int min_point;
+    vector<unsigned long> distance_arr; // store the distance between the start point and other nodes
+    vector<bool> is_found; // record the state of each node
 
-    unsigned int curPoint;
-    vector<unsigned int> distanceArr; // store the distance between the start point and other nodes
-    vector<bool> isFound; // record the state of each node
+    // initialize
+    distance_arr.resize(info.node_num, MAX);
+    root = info.dest_list.at(dest_idx).dest_point;
+    distance_arr.at(root) = 0;
+    is_found.resize(info.node_num, false);
 
-    // allocate memory
-    distanceArr.resize(info.nodeNum, UINT_MAX / 2); // !UINT_MAX
-    isFound.resize(info.nodeNum, false);
-
-    // for(int i = 0; i < vertexNum; i++) {
-    //     distanceArr[i] = adjMatrix[0][i];
-    //     isFound[i] = false;
-    // }
-
-    unsigned int root = info.dstList.at(dstIdx).dstPoint;
-    if(info.isOld)
-        info.dstList.at(dstIdx).oldTable[root] = root; // the next node of destionation is the destination itself
+    if(info.is_old)
+        info.dest_list.at(dest_idx).old_table[root] = root; // the next node of the destination is the destination itself
     else
-        info.dstList.at(dstIdx).newTable[root] = root;
-    // !delete
-    // for(unsigned int i = 0; i < info.nodeNum; i++) {
-    //     unsigned int tmp = info.isOld ? nodeList.at(root).oldNeighborList.at(i) : nodeList.at(root).newNeighborList.at(i);
-    //     distanceArr.at(i) = tmp;
-    //     if(tmp != UINT_MAX / 2) {
-    //         if(info.isOld) {
-    //             info.dstList.at(dstIdx).oldTable[i] = root; // root is the next node of node i (after the graph being reversed)
-    //         } else {
-    //             info.dstList.at(dstIdx).newTable[i] = root;
-    //         }
-    //     }
-    // }
-
-    // isFound[0] = true;
-    // distanceArr[0] = 0;
-    // for(int i = 0; i < vertexNum - 2; i++) {
-    //     curPoint = getMin(distanceArr, vertexNum, isFound);
-    //     isFound[curPoint] = true;
-    //     for(int j = 0; j < vertexNum; j++)
-    //         if(!isFound[j])
-    //             if(distanceArr[curPoint] + adjMatrix[curPoint][j] < distanceArr[j])
-    //                 distanceArr[j] = distanceArr[curPoint] + adjMatrix[curPoint][j];
-    // }
-
-    // !delete
-    // isFound.at(root) = true;
-    distanceArr.at(root) = 0;
+        info.dest_list.at(dest_idx).new_table[root] = root;
     
-    for(unsigned int i = 0; i < info.nodeNum; i++) {
-        curPoint = getMin(info, distanceArr, isFound); // get the smallest node that have the shortest distance between root node
-        isFound.at(curPoint) = true;
+    for(unsigned int i = 0; i < info.node_num - 1; i++) {
+        min_point = getMin(info, distance_arr, is_found); // get the smallest node that have the shortest distance between root node
+        is_found.at(min_point) = true;
 
         // update all distance between neighbor nodes and current point
-        for(unsigned int j = 0; j < info.nodeNum; j++) {
-            if(!isFound.at(j)) {
-                if(info.isOld) {
-                    if(distanceArr.at(curPoint) + nodeList.at(curPoint).oldNeighborList.at(j) < distanceArr.at(j)) {
-                        distanceArr.at(j) = distanceArr.at(curPoint) + nodeList.at(curPoint).oldNeighborList.at(j);
-                        info.dstList.at(dstIdx).oldTable[j] = curPoint; // use [] operator to overwrite the old data
+        for(unsigned int j = 0; j < info.node_num; j++) {
+            if(is_found.at(j))
+                continue;
+            if(info.is_old) {
+                if(distance_arr.at(min_point) + node_list.at(min_point).old_neighbor_list.at(j) == distance_arr.at(j)) {
+                    if(min_point < info.dest_list.at(dest_idx).old_table[j]) {
+                        info.dest_list.at(dest_idx).old_table[j] = min_point;
                     }
-                } else {
-                    if(distanceArr.at(curPoint) + nodeList.at(curPoint).newNeighborList.at(j) < distanceArr.at(j)) {
-                        distanceArr.at(j) = distanceArr.at(curPoint) + nodeList.at(curPoint).newNeighborList.at(j);
-                        info.dstList.at(dstIdx).newTable[j] = curPoint; // use [] operator to overwrite the old data
+                }
+                if(distance_arr.at(min_point) + node_list.at(min_point).old_neighbor_list.at(j) < distance_arr.at(j)) {
+                    distance_arr.at(j) = distance_arr.at(min_point) + node_list.at(min_point).old_neighbor_list.at(j);
+                    info.dest_list.at(dest_idx).old_table[j] = min_point; // use [] operator to overwrite the old data
+                }
+            } else {
+                if(distance_arr.at(min_point) + node_list.at(min_point).new_neighbor_list.at(j) == distance_arr.at(j)) {
+                    if(min_point < info.dest_list.at(dest_idx).new_table[j]) {
+                        info.dest_list.at(dest_idx).new_table[j] = min_point;
                     }
+                }
+                if(distance_arr.at(min_point) + node_list.at(min_point).new_neighbor_list.at(j) < distance_arr.at(j)) {
+                    distance_arr.at(j) = distance_arr.at(min_point) + node_list.at(min_point).new_neighbor_list.at(j);
+                    info.dest_list.at(dest_idx).new_table[j] = min_point; // use [] operator to overwrite the old data
                 }
             }
         }
     }
 }
 
-unsigned int getMin(Info info, vector<unsigned int> distanceArr, vector<bool> isFound)
+unsigned int Ctrl::getMin(Info &info, vector<unsigned long> distance_arr, vector<bool> is_found)
 {
     unsigned int minPos = 0;
-    unsigned long min = UINT_MAX;
+    unsigned long min = MAX;
 
-    for(unsigned int i = 0; i < info.nodeNum; i++) {
-        if(distanceArr.at(i) < min && !isFound.at(i)) {
-            min = distanceArr.at(i);
+    for(unsigned int i = 0; i < info.node_num; i++) {
+        if(distance_arr.at(i) < min && !is_found.at(i)) {
+            min = distance_arr.at(i);
             minPos = i;
         }
     }
-
     return minPos;
 }
 
-void Info::initialize()
-{
-    cin >> nodeNum >> dstNum >> linkNum;
+void Info::Initialize()
+{   
+    unsigned int link_id;
+    unsigned int node_1;
+    unsigned int node_2;
+    unsigned int weight;
 
-    dstList.resize(dstNum);
-    for(unsigned int i = 0; i < dstNum; i++)
-        cin >> dstList.at(i).dstPoint;
+    cin >> node_num >> dest_num >> link_num;
+    dest_list.resize(dest_num);
+    for(auto &itr : dest_list)
+        cin >> itr.dest_point;
+
+    // allocate memory and initialize all entries to MAX
+    node_list.resize(node_num);
+    for(auto &itr : node_list) {
+        itr.old_neighbor_list.resize(node_num, MAX);
+        itr.new_neighbor_list.resize(node_num, MAX);
+    }
+    
+    // read the relations between nodes
+    for(unsigned int i = 0; i < link_num; i++) {
+        cin >> link_id >> node_1 >> node_2;
+        cin >> weight;
+        node_list.at(node_1).old_neighbor_list.at(node_2) = weight;
+        node_list.at(node_2).old_neighbor_list.at(node_1) = weight;
+        cin >> weight;
+        node_list.at(node_1).new_neighbor_list.at(node_2) = weight;
+        node_list.at(node_2).new_neighbor_list.at(node_1) = weight;
+    }
 }
 
-void findPath(Info &info, vector<Node> nodeList)
+void Ctrl::PrintOldTable(Info info)
 {
-    for(unsigned int i = 0; i < info.dstNum; i++)
-        Dijkstra(info, nodeList, i); // use the destinations as the root of shortest path tree
+    for(unsigned int i = 0; i < info.node_num; i++) {
+        cout << i << endl; // simply print the node Id
+        for(auto itr : info.dest_list)
+            if(i != itr.dest_point) // if the node Id equals the destination, don't print it.
+                cout << itr.dest_point << " " << itr.old_table[i] << endl;
+    }
+}
+void Ctrl::PrintNewTable(Info info)
+{
+    for(unsigned int i = 0; i < info.node_num; i++) {
+        for(auto itr : info.dest_list) {
+            if(itr.old_table[i] != itr.new_table[i]) {
+                cout << i << endl; // print the node Id if any path is changed
+                break;
+            }
+        } 
+        for(auto itr : info.dest_list) {
+            if(itr.old_table[i] != itr.new_table[i]) // print the nodes that has been changed
+                cout << itr.dest_point << " " << itr.new_table[i] << endl;
+        }
+    }
 }
