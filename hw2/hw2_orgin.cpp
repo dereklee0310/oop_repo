@@ -1237,7 +1237,9 @@ int main()
     // packet::packet_generator::print(); // print all registered packets
     // node::node_generator::print(); // print all registered nodes
     // event::event_generator::print(); // print all registered events
-    // link::link_generator::print(); // print all registered links 
+    // link::link_generator::print(); // print all registered links
+
+    freopen("orgin_output.txt","w",stdout);
     
     // read the input and generate switch nodes
     for (unsigned int id = 0; id < 5; id ++){
