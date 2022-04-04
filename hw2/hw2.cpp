@@ -8,6 +8,7 @@
 #include <stack>
 
 #include <algorithm>
+#include <sstream>
 
 #define MAX 4096 //for dijkstra algorithm
 
@@ -982,14 +983,14 @@ class simple_link: public link {
 simple_link::simple_link_generator simple_link::simple_link_generator::sample;
 
 class SDN_switch: public node {
-        // map<unsigned int,bool> one_hop_neighbors; // you can use this variable to record the node's 1-hop neighbors 
-        
-        bool hi; // this is used for example; you can remove it when doing hw2
+        // map<unsigned int,bool> one_hop_neighbors; // you can use this variable to record the node's 1-hop neighbors
 
+        map<unsigned int, unsigned int> table; // routing table on a single node
+        
     protected:
         SDN_switch() {} // it should not be used
         SDN_switch(SDN_switch&) {} // it should not be used
-        SDN_switch(unsigned int _id): node(_id), hi(false) {} // this constructor cannot be directly called by users
+        SDN_switch(unsigned int _id): node(_id) {} // this constructor cannot be directly called by users
     
     public:
         ~SDN_switch(){}
@@ -1162,22 +1163,23 @@ void node::send (packet *p){ // this function is called by event; not for the us
 
 // you have to write the code in recv_handler of SDN_switch
 void SDN_switch::recv_handler (packet *p){
-    // in this function, you are "not" allowed to use node::id_to_node(id) !!!!!!!!
-
-    // this is a simple example
-    // node 0 broadcasts its message to every node and every node relays the packet "only once"
-    // the variable hi is used to examine whether the packet has been received before
-    // you can remove the variable hi and create your own variables in class SDN_switch
-    if (p == nullptr) return ;
+    if (p == nullptr) 
+        return;
     
-    if (p->type() == "SDN_data_packet" && !hi ) { // the switch receives a packet from the other switch
+    if (p->type() == "SDN_data_packet") { // the switch receives a packet from the other switch
         // cout << "node " << getNodeID() << " send the packet" << endl;
+        if(getNodeID() == p->getHeader()->getDstID()) {
+            return;
+        }
+
+        if(table.find(p->getHeader()->getDstID()) == table.end())
+            return;
+
         SDN_data_packet * p2 = nullptr;
         p2 = dynamic_cast<SDN_data_packet*> (p);
         p2->getHeader()->setPreID ( getNodeID() );
-        p2->getHeader()->setNexID ( BROCAST_ID );
-        p2->getHeader()->setDstID ( BROCAST_ID );
-        hi = true;
+        p2->getHeader()->setNexID ( table[p->getHeader()->getDstID()] );
+        p2->getHeader()->setDstID ( p->getHeader()->getDstID() );
         send_handler (p2);
     }
     else if (p->type() == "SDN_ctrl_packet") { // the switch receives a packet from the controller
@@ -1187,6 +1189,13 @@ void SDN_switch::recv_handler (packet *p){
         l3 = dynamic_cast<SDN_ctrl_payload*> (p3->getPayload());
         
         string msg = l3->getMsg(); // get the msg
+
+        stringstream tmp_stream(msg);
+        string dst_id, next_id;
+        getline(tmp_stream, dst_id, ' ');
+        getline(tmp_stream, next_id, ' ');
+
+        table[stoul(dst_id)] = stoul(next_id);
         // cout << getNodeID() << " received packet with msg context \"" << msg << "\""<< endl;
     }
 
@@ -1276,6 +1285,7 @@ class My_controller {
         void insertEvent();
         unsigned int get_dst_num() { return dst_num; };
         unsigned int get_node_num() { return node_num; };
+        unsigned int get_dur_time() { return dur_time; };
         friend bool compare(Event lhs, Event rhs);
 };
 
@@ -1293,8 +1303,6 @@ void My_controller::initialize() {
 
 // read the data from stdin
 void My_controller::readData() {
-    int dst;
-
     cin >> node_num >> dst_num >> link_num;
     cin >> inst_time >> updt_time >> dur_time;
 
@@ -1469,24 +1477,27 @@ int main()
     // event::event_generator::print(); // print all registered events
     // link::link_generator::print(); // print all registered links
 
-    freopen("1.in","r",stdin);
-    freopen("output.txt","w",stdout);
+    // freopen("1.in","r",stdin);
+    // freopen("output1.txt","w",stdout);
+
+    // freopen("2.in","r",stdin);
+    // freopen("output2.txt","w",stdout);
     
     My_controller controller;
     controller.readData();
-    cout << "##read success!##" << endl;
+    // cout << "##read success!##" << endl;
     controller.buildTable();
-    cout << "##build success!##" << endl;
+    // cout << "##build success!##" << endl;
     controller.createCtrlEvent();
-    cout << "##create ctrl packet success!##" << endl;
+    // cout << "##create ctrl packet success!##" << endl;
     sort(controller.event_list.begin(), controller.event_list.end(), compare);
-    cout << "##sorting event success!##" << endl;
-    cout << "##the number of event: " << controller.event_list.size() << "##" << endl;
+    // cout << "##sorting event success!##" << endl;
+    // cout << "##the number of event: " << controller.event_list.size() << "##" << endl;
     controller.insertEvent();
-    cout << "##insert event success!##" << endl;
+    // cout << "##insert event success!##" << endl;
 
     // start simulation!!
-    event::start_simulate(300);
+    event::start_simulate(controller.get_dur_time());
     // event::flush_events() ;
     // cout << packet::getLivePacketNum() << endl;
     return 0;
