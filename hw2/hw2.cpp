@@ -1243,6 +1243,7 @@ void SDN_switch::recv_handler (packet *p){
     // note that packet p will be discarded (deleted) after recv_handler(); you don't need to manually delete it
 }
 
+// a controller handling jobs in hw2
 class My_controller {
     private:
         unsigned int node_num, dst_num, link_num;
@@ -1265,8 +1266,8 @@ class My_controller {
                 unsigned int src_id;
                 unsigned int dst_id;
                 unsigned int node_id;
-                string msg;
-                string packet_type;
+                string msg; // "[destination] [id of next node]"
+                string packet_type; // "data" or "ctrl"
                 Event() {};
             public:
                 friend bool compare(Event lhs, Event rhs);
@@ -1282,7 +1283,7 @@ class My_controller {
         void Dijkstra(vector<Node> &node_list, unsigned int dst, bool is_old = true);
         unsigned int getMin(vector<unsigned long> distance_arr, vector<bool> is_found);
         void createCtrlEvent();
-        void insertEvent();
+        void callEvent();
         unsigned int get_dst_num() { return dst_num; };
         unsigned int get_node_num() { return node_num; };
         unsigned int get_dur_time() { return dur_time; };
@@ -1291,7 +1292,6 @@ class My_controller {
 
 // preallocate memory and set initial values
 void My_controller::initialize() {
-    // preallocate memory
     dest_list.resize(dst_num);
 
     node_list.resize(node_num);
@@ -1301,7 +1301,7 @@ void My_controller::initialize() {
     }
 }
 
-// read the data from stdin
+// read the data from stdin, create data packet event by the way
 void My_controller::readData() {
     cin >> node_num >> dst_num >> link_num;
     cin >> inst_time >> updt_time >> dur_time;
@@ -1329,13 +1329,13 @@ void My_controller::readData() {
         node::id_to_node(node2)->add_phy_neighbor(node1);
     }
 
-    // insert data packet (ctrl packet will be inserted after doing buildTable() function)
+    // create data packet event(ctrl packet event will be created in createCtrlTable() after doing buildTable() function)
     Event tmp_event("data");
     while(cin >> tmp_event.time >> tmp_event.src_id >> tmp_event.dst_id)
         event_list.push_back(tmp_event);
 }
 
-// sort the event call order
+// calling Dijkstra() repeatedly to build old and new routing table
 void My_controller::buildTable() {
     for(auto i : dest_list) {
         Dijkstra(node_list, i);
@@ -1343,9 +1343,9 @@ void My_controller::buildTable() {
     }
 }
 
+// shortest path algorithm
 void My_controller::Dijkstra(vector<Node> &node_list, unsigned int dst, bool is_old)
 {   
-    unsigned int min_point;
     vector<unsigned long> distance_arr; // store the distance between the start point and other nodes
     vector<bool> is_found; // record the state of each node
 
@@ -1361,7 +1361,7 @@ void My_controller::Dijkstra(vector<Node> &node_list, unsigned int dst, bool is_
         node_list.at(dst).new_table[dst] = dst;
     
     for(unsigned int i = 0; i < node_num - 1; i++) {
-        min_point = getMin(distance_arr, is_found); // get the smallest node that have the shortest distance between root node
+        unsigned int min_point = getMin(distance_arr, is_found); // get the smallest node that have the shortest distance between root node
         is_found.at(min_point) = true;
 
         // update all distance between neighbor nodes and current point
@@ -1376,7 +1376,7 @@ void My_controller::Dijkstra(vector<Node> &node_list, unsigned int dst, bool is_
                 }
                 if(distance_arr.at(min_point) + node_list.at(min_point).old_weight_list.at(j) < distance_arr.at(j)) {
                     distance_arr.at(j) = distance_arr.at(min_point) + node_list.at(min_point).old_weight_list.at(j);
-                    node_list.at(j).old_table[dst] = min_point; // use [] operator to overwrite the old data
+                    node_list.at(j).old_table[dst] = min_point;
                 }
             } else {
                 if(distance_arr.at(min_point) + node_list.at(min_point).new_weight_list.at(j) == distance_arr.at(j)) {
@@ -1386,13 +1386,14 @@ void My_controller::Dijkstra(vector<Node> &node_list, unsigned int dst, bool is_
                 }
                 if(distance_arr.at(min_point) + node_list.at(min_point).new_weight_list.at(j) < distance_arr.at(j)) {
                     distance_arr.at(j) = distance_arr.at(min_point) + node_list.at(min_point).new_weight_list.at(j);
-                    node_list.at(j).new_table[dst] = min_point; // use [] operator to overwrite the old data
+                    node_list.at(j).new_table[dst] = min_point;
                 }
             }
         }
     }
 }
 
+// function derived from Dijkstra()
 unsigned int My_controller::getMin(vector<unsigned long> distance_arr, vector<bool> is_found)
 {
     unsigned int minPos = 0;
@@ -1407,14 +1408,17 @@ unsigned int My_controller::getMin(vector<unsigned long> distance_arr, vector<bo
     return minPos;
 }
 
+// create ctrl packet event according to the routing table
 void My_controller::createCtrlEvent() {
     Event tmp_event("ctrl");
 
     for(unsigned int i = 0; i < node_num; i++) {
         for(unsigned int j = 0; j < dst_num; j++) {
-            if(i == dest_list[j]) // don't insert packet if the current node equals to its destination
+            // don't insert packet if the current node equals to its destination
+            if(i == dest_list[j])
                 continue;
-            string msg = to_string(dest_list[j]) + " " + to_string(node_list.at(i).old_table.at(dest_list[j])); // first: destination, second: next node_id
+
+            string msg = to_string(dest_list[j]) + " " + to_string(node_list.at(i).old_table.at(dest_list[j])); // "[destination] [id of next node]"
             tmp_event.time = inst_time;
             tmp_event.node_id = i;
             tmp_event.msg = msg;
@@ -1437,7 +1441,8 @@ void My_controller::createCtrlEvent() {
     }
 }
 
-void My_controller::insertEvent()
+// use the given api to actually generate events
+void My_controller::callEvent()
 {
     for(auto i : event_list) {
         if(i.packet_type == "ctrl")
@@ -1447,6 +1452,7 @@ void My_controller::insertEvent()
     }
 }
 
+// comparison function for std::sort
 bool compare(My_controller::Event lhs, My_controller::Event rhs)
 {   
     if(lhs.time != rhs.time)
@@ -1465,7 +1471,6 @@ bool compare(My_controller::Event lhs, My_controller::Event rhs)
             return lhs.src_id < rhs.src_id;
         return lhs.dst_id < rhs.dst_id;
     }
-    // return lhs.dst_id < rhs.dst_id;
 }
 
 int main()
@@ -1479,7 +1484,6 @@ int main()
 
     // freopen("1.in","r",stdin);
     // freopen("output1.txt","w",stdout);
-
     // freopen("2.in","r",stdin);
     // freopen("output2.txt","w",stdout);
     
@@ -1493,7 +1497,7 @@ int main()
     sort(controller.event_list.begin(), controller.event_list.end(), compare);
     // cout << "##sorting event success!##" << endl;
     // cout << "##the number of event: " << controller.event_list.size() << "##" << endl;
-    controller.insertEvent();
+    controller.callEvent();
     // cout << "##insert event success!##" << endl;
 
     // start simulation!!
