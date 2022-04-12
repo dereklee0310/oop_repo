@@ -1274,7 +1274,6 @@ class My_controller {
                 friend class My_controller;
                 Event(string type) : packet_type(type) {};
         };
-
     public:
         vector<Event> event_list;
         void initialize();
@@ -1296,8 +1295,8 @@ void My_controller::initialize() {
 
     node_list.resize(node_num);
     for(auto &i : node_list) {
-        i.old_weight_list.resize(node_num, UINT_MAX / 2);
-        i.new_weight_list.resize(node_num, UINT_MAX / 2);
+        i.old_weight_list.resize(node_num, MAX); // MAX: 4096
+        i.new_weight_list.resize(node_num, MAX);
     }
 }
 
@@ -1308,15 +1307,15 @@ void My_controller::readData() {
 
     initialize();
 
-    // read the input and generate switch nodes
+    // generate switch nodes
     for (unsigned int id = 0; id < node_num; id++)
         node::node_generator::generate("SDN_switch",id);
     
-    // destination points
+    // read the destination points
     for(unsigned int i = 0; i < dst_num; i++)
         cin >> dest_list.at(i);
 
-    // create a adjacency matrix
+    // read the data and create a adjacency matrix
     for(unsigned int i = 0; i < link_num; i++) {
         cin >> link_id >> node1 >> node2 >> old_weight >> new_weight;
         node_list.at(node1).old_weight_list.at(node2) = old_weight;
@@ -1329,7 +1328,7 @@ void My_controller::readData() {
         node::id_to_node(node2)->add_phy_neighbor(node1);
     }
 
-    // create data packet event(ctrl packet event will be created in createCtrlTable() after doing buildTable() function)
+    // create data packet event(ctrl packet event will be created in createCtrlTable() after buildTable() function call)
     Event tmp_event("data");
     while(cin >> tmp_event.time >> tmp_event.src_id >> tmp_event.dst_id)
         event_list.push_back(tmp_event);
@@ -1412,13 +1411,15 @@ unsigned int My_controller::getMin(vector<unsigned long> distance_arr, vector<bo
 void My_controller::createCtrlEvent() {
     Event tmp_event("ctrl");
 
+    // i is the node id, j is the index of destination points 
     for(unsigned int i = 0; i < node_num; i++) {
-        for(unsigned int j = 0; j < dst_num; j++) {
+        for(unsigned int j = 0; j < dst_num; j++) { 
+            unsigned int cur_dst_id = dest_list[j];
             // don't insert packet if the current node equals to its destination
-            if(i == dest_list[j])
+            if(i == cur_dst_id)
                 continue;
 
-            string msg = to_string(dest_list[j]) + " " + to_string(node_list.at(i).old_table.at(dest_list[j])); // "[destination] [id of next node]"
+            string msg = to_string(cur_dst_id) + " " + to_string(node_list.at(i).old_table.at(cur_dst_id)); // "[destination] [id of next node]"
             tmp_event.time = inst_time;
             tmp_event.node_id = i;
             tmp_event.msg = msg;
@@ -1427,11 +1428,11 @@ void My_controller::createCtrlEvent() {
 
         for(unsigned j = 0; j < dst_num; j++) {
             unsigned int cur_dst_id = dest_list[j];
-            unsigned int old_next_id = node_list.at(i).old_table.at(dest_list[j]);
-            unsigned int new_next_id = node_list.at(i).new_table.at(dest_list[j]);
+            unsigned int old_next_id = node_list.at(i).old_table.at(cur_dst_id);
+            unsigned int new_next_id = node_list.at(i).new_table.at(cur_dst_id);
 
             if(old_next_id != new_next_id) {
-                string msg = to_string(cur_dst_id) + " " + to_string(new_next_id); // first: destination, second: a new next node_id that is different from the one in old_table
+                string msg = to_string(cur_dst_id) + " " + to_string(new_next_id); // first: "[destination] [id of next node (changed)]"
                 tmp_event.time = updt_time;
                 tmp_event.node_id = i;
                 tmp_event.msg = msg;
