@@ -1,0 +1,28 @@
+time           0                                         srcID          5   dstID          2   matID          1   actID          1   SDN_ctrl_packet generating
+time           0                                         srcID          5   dstID          0   matID          1   actID          1   SDN_ctrl_packet generating
+time           0                                         srcID          5   dstID          3   matID          1   actID          1   SDN_ctrl_packet generating
+time           0   recID          5   pktID          2   srcID          5   dstID          3   preID          5   nexID          5   SDN_ctrl_packet
+time           0   senID          5   pktID          2   srcID          5   dstID          3   preID          5   nexID          3   SDN_ctrl_packet
+time           0   recID          5   pktID          1   srcID          5   dstID          0   preID          5   nexID          5   SDN_ctrl_packet
+time           0   recID          5   pktID          0   srcID          5   dstID          2   preID          5   nexID          5   SDN_ctrl_packet
+time           0                                         srcID          5   dstID          4   matID          1   actID          3   SDN_ctrl_packet generating
+time           0   recID          5   pktID          3   srcID          5   dstID          4   preID          5   nexID          5   SDN_ctrl_packet
+time           0   senID          5   pktID          3   srcID          5   dstID          4   preID          5   nexID          4   SDN_ctrl_packet
+time           0   senID          5   pktID          1   srcID          5   dstID          0   preID          5   nexID          0   SDN_ctrl_packet
+time           0   senID          5   pktID          0   srcID          5   dstID          2   preID          5   nexID          2   SDN_ctrl_packet
+time          10   recID          3   pktID          2   srcID          5   dstID          3   preID          5   nexID          3   SDN_ctrl_packet
+time          10   recID          2   pktID          0   srcID          5   dstID          2   preID          5   nexID          2   SDN_ctrl_packet
+time          10   recID          0   pktID          1   srcID          5   dstID          0   preID          5   nexID          0   SDN_ctrl_packet
+time          10   recID          4   pktID          3   srcID          5   dstID          4   preID          5   nexID          4   SDN_ctrl_packet
+time         100                                         srcID          5   dstID          4   matID          1   actID          2   SDN_ctrl_packet generating
+time         100                                         srcID          5   dstID          2   matID          1   actID          3   SDN_ctrl_packet generating
+time         100   recID          5   pktID          4   srcID          5   dstID          4   preID          5   nexID          5   SDN_ctrl_packet
+time         100   senID          5   pktID          4   srcID          5   dstID          4   preID          5   nexID          4   SDN_ctrl_packet
+time         100   recID          5   pktID          5   srcID          5   dstID          2   preID          5   nexID          5   SDN_ctrl_packet
+time         100   senID          5   pktID          5   srcID          5   dstID          2   preID          5   nexID          2   SDN_ctrl_packet
+time         100                                         srcID          5   dstID          0   matID          1   actID          3   SDN_ctrl_packet generating
+time         100   recID          5   pktID          6   srcID          5   dstID          0   preID          5   nexID          5   SDN_ctrl_packet
+time         100   senID          5   pktID          6   srcID          5   dstID          0   preID          5   nexID          0   SDN_ctrl_packet
+time         110   recID          0   pktID          6   srcID          5   dstID          0   preID          5   nexID          0   SDN_ctrl_packet
+time         110   recID          2   pktID          5   srcID          5   dstID          2   preID          5   nexID          2   SDN_ctrl_packet
+time         110   recID          4   pktID          4   srcID          5   dstID          4   preID          5   nexID          4   SDN_ctrl_packet

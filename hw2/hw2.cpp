@@ -1466,6 +1466,7 @@ bool compare(My_controller::Event lhs, My_controller::Event rhs)
     if(packet_type == "ctrl") {
         if(lhs.node_id != rhs.node_id)
             return lhs.node_id < rhs.node_id;
+            
         return lhs.msg < rhs.msg;
     } else { // (packet_type == "data")
         if(lhs.src_id != rhs.src_id)
@@ -1483,10 +1484,10 @@ int main()
     // event::event_generator::print(); // print all registered events
     // link::link_generator::print(); // print all registered links
 
-    // freopen("1.in","r",stdin);
-    // freopen("output1.txt","w",stdout);
-    // freopen("2.in","r",stdin);
-    // freopen("output2.txt","w",stdout);
+    freopen(".\\1.in","r",stdin);
+    freopen(".\\output1.txt","w",stdout);
+    // freopen(".\\2.in","r",stdin);
+    // freopen(".\\output2.txt","w",stdout);
     
     My_controller controller;
     controller.readData();
@@ -1507,5 +1508,3 @@ int main()
     // cout << packet::getLivePacketNum() << endl;
     return 0;
 }
-
-//TODO: sort event and data_packet
