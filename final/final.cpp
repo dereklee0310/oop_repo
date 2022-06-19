@@ -574,8 +574,6 @@ class SDN_controller: public node {
          **********************/
         vector<int> status; // -1 for not related, 0 for delete, 1 for update, 2 for new, 3 for not changed
         vector<int> ack_arr; // 0 for initial, 1 for send, 2 for ack
-        vector<int> status; // 0 for delete, 1 for update, 2 for new
-        vector<int> ack_arr;
         vector<int> simplify_order_path;
 
         // single node in routing table
@@ -2653,7 +2651,7 @@ void SDN_controller::recv_handler (packet *p) {
                 new_path.push_back(make_pair(cur_node, node_list.at(cur_node).new_table.at(handler.get_dst_id())));
                 cur_node = node_list.at(cur_node).new_table.at(handler.get_dst_id());
             }
-            setUPStatus();
+            //TODO: setUPStatus();
         }
     }
 }
@@ -2811,9 +2809,9 @@ int main()
     // event::event_generator::print(); // print all registered events
     // link::link_generator::print(); // print all registered links
 
-    /******************************************
-     * reassign the file pointers: test case1 *
-     ******************************************/
+    /*****************************************
+     * reassign the file pointers: test case *
+     *****************************************/
     // freopen(".\\samples-Part1\\1.in","r", stdin);
     // freopen(".\\output1.txt","w", stdout);
 
@@ -2826,14 +2824,11 @@ int main()
     // freopen(".\\test3.txt","r",stdin);
     // freopen(".\\output_test3.txt","w",stdout);
 
-    freopen(".\\test4.txt","r",stdin);
-    freopen(".\\output_test4.txt","w",stdout);
+    // freopen(".\\test4.txt","r",stdin);
+    // freopen(".\\output_test4.txt","w",stdout);
 
-    /******************************************
-     * reassign the file pointers: test case2 *
-     ******************************************/
-    // freopen(".\\samples-Part1\\2.in","r",stdin);
-    // freopen(".\\output2.txt","w",stdout);
+    // freopen(".\\test5.txt","r",stdin);
+    // freopen(".\\output_test5.txt","w",stdout);
 
     handler.startSetup();
 
