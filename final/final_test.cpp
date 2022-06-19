@@ -2445,6 +2445,7 @@ class Data_handler {
         unsigned int get_dur_time() { return dur_time; };
         unsigned int get_dst_id() { return dst_id; };
         unsigned int get_src_id() { return src_id; };
+        vector< pair<unsigned int, unsigned int> > get_path() { return path; }
 
         Data_handler() {};
         ~Data_handler() {};
@@ -2571,6 +2572,7 @@ void SDN_controller::recv_handler (packet *p) {
         ack_arr.resize(switch_num, 0);
         status.resize(switch_num, -1);
         isInitialized = true;
+        old_path = handler.get_path();
     }
 
     // copy it, then forward the packet
@@ -2651,7 +2653,7 @@ void SDN_controller::recv_handler (packet *p) {
                 new_path.push_back(make_pair(cur_node, node_list.at(cur_node).new_table.at(handler.get_dst_id())));
                 cur_node = node_list.at(cur_node).new_table.at(handler.get_dst_id());
             }
-            // setUPStatus();
+            setUPStatus();
         }
     }
 }
@@ -2849,8 +2851,8 @@ int main()
     /*****************************************
      * reassign the file pointers: test case *
      *****************************************/
-    // freopen(".\\samples-Part1\\1.in","r", stdin);
-    // freopen(".\\output1.txt","w", stdout);
+    freopen(".\\samples-Part1\\1.in","r", stdin);
+    freopen(".\\output1.txt","w", stdout);
 
     // freopen(".\\test.txt","r",stdin);
     // freopen(".\\output_test1.txt","w",stdout);
