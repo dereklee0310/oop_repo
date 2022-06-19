@@ -2773,7 +2773,11 @@ void SDN_controller::setUPStatus() {
 
         for(unsigned int i = 0; i < status.size(); i++) {
             if(status.at(i) == 1 && ack_arr.at(i) == 0) {
+<<<<<<< HEAD
                 ctrl_upd_packet_event(con_id, i, dst_id, node_list.at(i).new_table.at(dst_id));
+=======
+                ctrl_new_packet_event(con_id, i, dst_id, node_list.at(i).new_table.at(dst_id));
+>>>>>>> 9c3ac1a401e59a250d0a7bc32ee557769af62825
                 ack_arr.at(i) = 1;
                 // return;
             }
@@ -2851,8 +2855,13 @@ int main()
     /*****************************************
      * reassign the file pointers: test case *
      *****************************************/
+<<<<<<< HEAD
     // freopen(".\\samples-Part1\\1.in","r", stdin);
     // freopen(".\\output1.txt","w", stdout);
+=======
+    freopen(".\\samples-Part1\\1.in","r", stdin);
+    freopen(".\\output1.txt","w", stdout);
+>>>>>>> 9c3ac1a401e59a250d0a7bc32ee557769af62825
 
     // freopen(".\\test.txt","r",stdin);
     // freopen(".\\output_test1.txt","w",stdout);
